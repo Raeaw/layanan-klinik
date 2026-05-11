@@ -1,0 +1,82 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Ubah provider menjadi "mysql" jika Anda menggunakan MySQL
+datasource db {
+  provider = "mysql" 
+}
+
+model Patient {
+  id         Int       @id @default(autoincrement())
+  name       String
+  contact    String?
+  address    String?   @db.Text
+  created_at DateTime  @default(now())
+  services   Service[]
+}
+
+model Doctor {
+  id             Int       @id @default(autoincrement())
+  name           String
+  specialization String?
+  services       Service[]
+}
+
+model Service {
+  id           Int             @id @default(autoincrement())
+  patientId    Int
+  doctorId     Int
+  service_date DateTime        // Bisa diatur manual untuk layanan terdahulu
+  total_cost   Decimal         @db.Decimal(10, 2)
+  notes        String?         @db.Text
+  
+  patient      Patient         @relation(fields: [patientId], references: [id])
+  doctor       Doctor          @relation(fields: [doctorId], references: [id])
+  details      ServiceDetail[]
+}
+
+model ServiceDetail {
+  id                 Int       @id @default(autoincrement())
+  serviceId          Int
+  medicineId         Int?      // Nullable, karena bisa saja layanan tanpa obat
+  item_name          String    // Nama layanan/obat saat itu
+  quantity           Int
+  price_at_the_time  Decimal   @db.Decimal(10, 2)
+  
+  service            Service   @relation(fields: [serviceId], references: [id])
+  medicine           Medicine? @relation(fields: [medicineId], references: [id])
+}
+
+model Medicine {
+  id               Int                    @id @default(autoincrement())
+  name             String
+  category         String?
+  current_price    Decimal                @db.Decimal(10, 2)
+  
+  service_details  ServiceDetail[]
+  batches          MedicineBatch[]
+  price_histories  MedicinePriceHistory[]
+}
+
+model MedicineBatch {
+  id             Int      @id @default(autoincrement())
+  medicineId     Int
+  stock_quantity Int
+  expiry_date    DateTime @db.Date // Khusus tanggal expired
+  date_added     DateTime @default(now())
+  
+  medicine       Medicine @relation(fields: [medicineId], references: [id])
+}
+
+model MedicinePriceHistory {
+  id         Int      @id @default(autoincrement())
+  medicineId Int
+  old_price  Decimal  @db.Decimal(10, 2)
+  new_price  Decimal  @db.Decimal(10, 2)
+  changed_at DateTime @default(now())
+  
+  medicine   Medicine @relation(fields: [medicineId], references: [id])
+}
