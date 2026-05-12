@@ -19,6 +19,7 @@ export const api = {
 
   // Dokter
   getDokter:       ()     => get('/dokter'),
+  getDokterById: (id) => get(`/dokter/${id}`),
   createDokter:    (data) => post('/dokter', data),
   updateDokter: (id, data) => put(`/dokter/${id}`, data),
 
