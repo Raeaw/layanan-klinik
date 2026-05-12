@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Search, Plus, ChevronRight, X, ArrowLeft } from 'lucide-react';
+import { Search, Plus, ChevronRight, X, ArrowLeft, Phone, MapPin, Calendar, ClipboardList } from 'lucide-react';
 
 const fmt = {
-  date:     (d) => new Date(d).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }),
+  date:     (d) => new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
   currency: (n) => 'Rp ' + Number(n).toLocaleString('id-ID'),
 };
+
+const inputCls = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300';
 
 function TambahPasienModal({ onClose, onSaved }) {
   const [form, setForm] = useState({ name: '', contact: '', address: '' });
   const [saving, setSaving] = useState(false);
-  const inputCls = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300';
 
   const submit = async () => {
-    if (!form.name.trim()) return alert('Nama wajib diisi');
+    if (!form.name.trim()) return;
     setSaving(true);
     await api.createPasien(form);
     setSaving(false);
@@ -31,17 +32,18 @@ function TambahPasienModal({ onClose, onSaved }) {
         <div className="px-6 py-4 space-y-3">
           <div>
             <label className="text-xs font-medium text-slate-600 mb-1 block">Nama *</label>
-            <input className={inputCls} value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} />
+            <input className={inputCls} value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           </div>
           <div>
             <label className="text-xs font-medium text-slate-600 mb-1 block">Kontak</label>
             <input className={inputCls} placeholder="No. HP / email" value={form.contact}
-              onChange={e => setForm(f => ({...f, contact: e.target.value}))} />
+              onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} />
           </div>
           <div>
             <label className="text-xs font-medium text-slate-600 mb-1 block">Alamat</label>
             <textarea className={inputCls} rows={2} value={form.address}
-              onChange={e => setForm(f => ({...f, address: e.target.value}))} />
+              onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
           </div>
         </div>
         <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
@@ -57,7 +59,7 @@ function TambahPasienModal({ onClose, onSaved }) {
 }
 
 function PasienDetail({ pasienId, onBack }) {
-  const [data, setData] = useState(null);
+  const [data, setData]         = useState(null);
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
@@ -66,54 +68,105 @@ function PasienDetail({ pasienId, onBack }) {
 
   if (!data) return <div className="p-8 text-center text-slate-400 text-sm">Memuat...</div>;
 
+  const totalBiaya = data.services.reduce((s, l) => s + Number(l.total_cost), 0);
+
   return (
     <div>
-      <button onClick={onBack} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-4 transition-colors">
+      <button onClick={onBack}
+        className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-4 transition-colors">
         <ArrowLeft size={14} /> Kembali ke daftar
       </button>
+
+      {/* Info Pasien */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-4">
-        <h2 className="text-lg font-bold text-slate-800">{data.name}</h2>
-        {data.contact && <p className="text-sm text-slate-500 mt-1">📞 {data.contact}</p>}
-        {data.address && <p className="text-sm text-slate-500">📍 {data.address}</p>}
-        <p className="text-xs text-slate-400 mt-2">Terdaftar: {fmt.date(data.created_at)}</p>
+        <h2 className="text-lg font-bold text-slate-800 mb-3">{data.name}</h2>
+        <div className="space-y-2">
+          {data.contact && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <Phone size={14} className="text-slate-400 shrink-0" />
+              {data.contact}
+            </div>
+          )}
+          {data.address && (
+            <div className="flex items-start gap-2 text-sm text-slate-600">
+              <MapPin size={14} className="text-slate-400 shrink-0 mt-0.5" />
+              {data.address}
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Calendar size={12} className="shrink-0" />
+            Terdaftar {fmt.date(data.created_at)}
+          </div>
+        </div>
       </div>
 
-      <h3 className="font-semibold text-slate-700 mb-3">Riwayat Layanan ({data.services.length})</h3>
+      {/* Stat */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
+          <div className="bg-blue-50 rounded-xl p-2.5"><ClipboardList size={18} className="text-blue-500" /></div>
+          <div>
+            <p className="text-xs text-slate-500">Total Kunjungan</p>
+            <p className="text-xl font-bold text-blue-600">{data.services.length}</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex items-center gap-3">
+          <div className="bg-teal-50 rounded-xl p-2.5"><span className="text-teal-500 text-sm font-bold">Rp</span></div>
+          <div>
+            <p className="text-xs text-slate-500">Total Biaya</p>
+            <p className="text-lg font-bold text-teal-600">{fmt.currency(totalBiaya)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Riwayat Layanan */}
+      <h3 className="font-semibold text-slate-700 mb-3 text-sm">Riwayat Layanan ({data.services.length})</h3>
       {data.services.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 text-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-400 text-sm">
           Belum ada riwayat layanan
         </div>
       ) : (
-        <div className="space-y-2">
-          {data.services.map(svc => (
-            <div key={svc.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <button
-                onClick={() => setExpanded(prev => prev === svc.id ? null : svc.id)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-slate-800">{fmt.date(svc.service_date)}</span>
-                  <span className="text-xs text-slate-500">{svc.doctor.name}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-teal-700">{fmt.currency(svc.total_cost)}</span>
-                  <ChevronRight size={14} className={`text-slate-400 transition-transform ${expanded === svc.id ? 'rotate-90' : ''}`} />
-                </div>
-              </button>
-              {expanded === svc.id && (
-                <div className="px-4 pb-3 border-t border-slate-100">
-                  {svc.notes && <p className="text-xs text-slate-500 italic mt-2 mb-2">"{svc.notes}"</p>}
-                  <div className="space-y-1">
-                    {svc.details.map(d => (
-                      <div key={d.id} className="flex justify-between text-xs text-slate-600 py-0.5">
-                        <span>{d.item_name} × {d.quantity}</span>
-                        <span>{fmt.currency(Number(d.price_at_the_time) * d.quantity)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+              <tr>
+                <th className="text-left py-3 px-4">Tanggal</th>
+                <th className="text-left py-3 px-4">Dokter</th>
+                <th className="text-right py-3 px-4">Total</th>
+                <th className="py-3 px-4 w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.services.map(svc => (
+                <>
+                  <tr key={svc.id}
+                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
+                    onClick={() => setExpanded(prev => prev === svc.id ? null : svc.id)}>
+                    <td className="py-3 px-4 text-sm text-slate-600">{fmt.date(svc.service_date)}</td>
+                    <td className="py-3 px-4 text-sm text-slate-700">{svc.doctor.name}</td>
+                    <td className="py-3 px-4 text-right text-sm font-semibold text-teal-700">{fmt.currency(svc.total_cost)}</td>
+                    <td className="py-3 px-4">
+                      <ChevronRight size={14} className={`text-slate-400 transition-transform ${expanded === svc.id ? 'rotate-90' : ''}`} />
+                    </td>
+                  </tr>
+                  {expanded === svc.id && (
+                    <tr className="bg-teal-50/40">
+                      <td colSpan={4} className="px-6 py-3">
+                        {svc.notes && <p className="text-xs text-slate-500 italic mb-2">"{svc.notes}"</p>}
+                        <div className="space-y-1">
+                          {svc.details.map(d => (
+                            <div key={d.id} className="flex justify-between text-xs text-slate-600">
+                              <span>{d.item_name} × {d.quantity}</span>
+                              <span>{fmt.currency(Number(d.price_at_the_time) * d.quantity)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -170,7 +223,7 @@ export default function Pasien() {
                 <th className="text-left py-3 px-4">Kontak</th>
                 <th className="text-left py-3 px-4">Alamat</th>
                 <th className="text-left py-3 px-4">Terdaftar</th>
-                <th className="py-3 px-4 w-10"></th>
+                <th className="py-3 px-4 w-8"></th>
               </tr>
             </thead>
             <tbody>
@@ -178,16 +231,14 @@ export default function Pasien() {
                 <tr><td colSpan={5} className="text-center py-12 text-slate-400 text-sm">Belum ada pasien</td></tr>
               ) : (
                 filtered.map(p => (
-                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
+                    onClick={() => setSelectedId(p.id)}>
                     <td className="py-3 px-4 text-sm font-medium text-slate-800">{p.name}</td>
                     <td className="py-3 px-4 text-sm text-slate-600">{p.contact || '-'}</td>
                     <td className="py-3 px-4 text-sm text-slate-600 max-w-xs truncate">{p.address || '-'}</td>
                     <td className="py-3 px-4 text-sm text-slate-500">{fmt.date(p.created_at)}</td>
                     <td className="py-3 px-4">
-                      <button onClick={() => setSelectedId(p.id)}
-                        className="text-teal-600 hover:text-teal-700 transition-colors">
-                        <ChevronRight size={16} />
-                      </button>
+                      <ChevronRight size={16} className="text-slate-400" />
                     </td>
                   </tr>
                 ))
@@ -196,6 +247,7 @@ export default function Pasien() {
           </table>
         )}
       </div>
+
       {showModal && <TambahPasienModal onClose={() => setShowModal(false)} onSaved={load} />}
     </div>
   );
